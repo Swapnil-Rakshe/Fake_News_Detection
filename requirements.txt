@@ -7,5 +7,6 @@ wordcloud
 nltk
 gensim
 tensorflow
+keras
 torch
 transformers
