@@ -13,3 +13,11 @@ def save_object(file_path, obj):
 
     except:
         print("error in saving object at {}".format(file_path))
+        
+def load_object(file_path):
+    try:
+        with open(file_path, "rb") as file_obj:
+            return pickle.load(file_obj)
+
+    except:
+        print("error in loading object at {}".format(file_path))

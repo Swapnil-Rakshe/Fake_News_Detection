@@ -5,11 +5,12 @@ from nltk.corpus import stopwords
 import nltk
 import re
 import os
-import sys
 nltk.download('stopwords')
 from nltk.stem.porter import PorterStemmer
 ps = PorterStemmer()
 from utils import save_object
+from keras.preprocessing.text import Tokenizer
+from keras.utils import pad_sequences
 
 
 @dataclass
@@ -19,7 +20,7 @@ class DataTransformationConfig:
 
 class DataTransformation:
     def __init__(self):
-        self.data_transformation_config=DataTransformationConfig()
+        self.train_df = pd.read_csv("artifacts/train.csv")
     
     def get_data_transformer_object(self, messages):
         try:
@@ -34,29 +35,36 @@ class DataTransformation:
                review = ' '.join(review)
                corpus.append(review)
 
-            return corpus
+            tokenizer = Tokenizer(num_words = 13225)
+            tokenizer.fit_on_texts(self.train_df['title'])
+            train_sequences = tokenizer.texts_to_sequences(corpus)
+            input_feature_train_arr = pad_sequences(train_sequences,maxlen = 42, padding = 'pre', truncating = 'post')
+            
+            return input_feature_train_arr
+    
         except:
             print("Error in getting data transformer object")
+            
+class InitiateDataTransformation:
+    def __init__(self):
+        self.data_transformation_config=DataTransformationConfig()
         
-    def initiate_data_transformation(self, train_path, test_path, validation_path):
+    def initiate_data_transformation(self, train_path, validation_path, test_path):
         train_df = pd.read_csv(train_path)
         validation_df = pd.read_csv(validation_path)
         test_df = pd.read_csv(test_path)
         
-        preprocessing_obj=self.get_data_transformer_object(train_df['title'])
+        preprocessing_obj=DataTransformation()
         
-        input_feature_train_df = train_df.drop(columns="true", axis=1)
-        target_feature_train_df = train_df["true"]
+        input_feature_train_df = train_df['title']
         
-        input_feature_validation_df = validation_df.drop(columns="true", axis=1)
-        target_feature_validation_df = validation_df["true"]
+        input_feature_validation_df = validation_df['title']
 
-        input_feature_test_df = test_df.drop(columns="true", axis=1)
-        target_feature_test_df = test_df["true"]
+        input_feature_test_df = test_df['title']
         
-        input_feature_train_arr=preprocessing_obj.fit_transform(input_feature_train_df)
-        input_feature_validation_arr=preprocessing_obj.transform(input_feature_validation_df)
-        input_feature_test_arr=preprocessing_obj.transform(input_feature_test_df)
+        train_preprocessed=preprocessing_obj.get_data_transformer_object(input_feature_train_df)
+        validation_preprocessed=preprocessing_obj.get_data_transformer_object(input_feature_validation_df)
+        test_preprocessed=preprocessing_obj.get_data_transformer_object(input_feature_test_df)
     
         save_object(
             file_path=self.data_transformation_config.preprocessor_obj_file_path,
@@ -64,9 +72,9 @@ class DataTransformation:
         )
         
         return (
-        input_feature_train_arr,
-        input_feature_validation_arr,
-        input_feature_test_arr,
+        train_preprocessed,
+        validation_preprocessed,
+        test_preprocessed,
         self.data_transformation_config.preprocessor_obj_file_path,
         )
         

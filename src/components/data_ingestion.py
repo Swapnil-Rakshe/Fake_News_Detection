@@ -9,9 +9,11 @@ from sklearn.model_selection import train_test_split
 import os
 
 
-from data_transformation import DataTransformation
+from data_transformation import InitiateDataTransformation
 from data_transformation import DataTransformationConfig
 
+from BiLSTM_model_trainer import ModelTrainerConfig
+from BiLSTM_model_trainer import ModelTrainer
 
 @dataclass
 class DataIngestionConfig:
@@ -68,25 +70,38 @@ class DataIngestion:
         df = shuffle(df).reset_index(drop=True)
         
         # Splitting the data into training and test sets
-        train_set,test_set=train_test_split(df,test_size=0.2,random_state=42)
+        train_set_1,test_set=train_test_split(df,test_size=0.2,random_state=42)
         
         # Splitting the training data into training and validation sets
-        train_set, validation_set=train_test_split(train_set,test_size=0.2,random_state=42)
+        train_set, validation_set=train_test_split(train_set_1,test_size=0.2,random_state=42)
         
         train_set.to_csv(self.ingestion_config.train_data_path,index=False,header=True)
-        test_set.to_csv(self.ingestion_config.test_data_path,index=False,header=True)
         validation_set.to_csv(self.ingestion_config.validation_data_path,index=False,header=True)
+        test_set.to_csv(self.ingestion_config.test_data_path,index=False,header=True)
         
         return(
                 self.ingestion_config.train_data_path,
-                self.ingestion_config.test_data_path,
-                self.ingestion_config.validation_data_path
+                self.ingestion_config.validation_data_path,
+                self.ingestion_config.test_data_path
 
             )
         
 if __name__ == "__main__":
     obj = DataIngestion()
-    train_data, test_data, validation_data = obj.data_combination()
+    train_data, validation_data, test_data = obj.data_combination()
     
-    data_transformation = DataTransformation()
-    train_arr,test_arr,validation_arr,_=data_transformation.initiate_data_transformation(train_data, test_data, validation_data)
+    data_transformation = InitiateDataTransformation()
+    x_train, x_val, x_test,_=data_transformation.initiate_data_transformation(train_data, validation_data, test_data)
+    
+    y_1 = pd.read_csv("artifacts/train.csv")
+    y_train = y_1['true']
+    y_2 = pd.read_csv("artifacts/validation.csv")
+    y_val = y_2['true']
+    
+    print(len(x_train))
+    print(len(y_train))
+    print(len(x_val))
+    print(len(y_val))
+    
+    modeltrainer=ModelTrainer()
+    modeltrainer.initiate_model_trainer(x_train,y_train, x_val, y_val)
