@@ -1,16 +1,19 @@
 import os
 import pandas as pd
+import numpy as np
 import torch
-from transformers import AutoModel, BertTokenizerFast
+from transformers import BertTokenizer, BertModel
 import torch.nn as nn
 from dataclasses import dataclass
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
 from transformers import AdamW
 from utils import save_object
+from transformers import BertForSequenceClassification
+from tqdm import trange
 
 # Load BERT model and tokenizer via HuggingFace Transformers
-bert = AutoModel.from_pretrained('bert-base-uncased')
-tokenizer = BertTokenizerFast.from_pretrained('bert-base-uncased')
+tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+bert = BertModel.from_pretrained("bert-base-uncased")
 
 
 @dataclass
@@ -24,30 +27,36 @@ class BERTModelTrainer:
         
     def tokenizer(self, x_train, y_train, x_val, y_val):
         # Majority of titles above have word length under 15. So, we set max title length as 15
-        MAX_LENGHT = 42
+        MAX_LENGTH = 42
         # Tokenize and encode sequences in the train set
-        tokens_train = tokenizer(
-            x_train.tolist(),
-            max_length = MAX_LENGHT,
+        tokens_train = tokenizer.batch_encode_plus(
+            x_train,
+            max_length = MAX_LENGTH,
             padding=True,
             truncation=True
         )
         # tokenize and encode sequences in the validation set
-        tokens_val = tokenizer(
-            x_val.tolist(),
-            max_length = MAX_LENGHT,
+        tokens_val = tokenizer.batch_encode_plus(
+            x_val,
+            max_length = MAX_LENGTH,
             padding=True,
             truncation=True
         )  
-            
+        
+        print(len(tokens_train['input_ids']))
+        print(len(tokens_train['attention_mask']))
+        print(len(y_train))
+        print(len(tokens_val['input_ids']))
+        print(len(tokens_val['attention_mask']))
+        print(len(y_val))
         # Convert lists to tensors
         train_seq = torch.tensor(tokens_train['input_ids'])
         train_mask = torch.tensor(tokens_train['attention_mask'])
-        train_y = torch.tensor(y_train.tolist())
+        train_y = torch.tensor(y_train)
 
         val_seq = torch.tensor(tokens_val['input_ids'])
         val_mask = torch.tensor(tokens_val['attention_mask'])
-        val_y = torch.tensor(y_val.tolist())
+        val_y = torch.tensor(y_val)
 
         batch_size = 32                                               #define a batch size
 
@@ -61,66 +70,69 @@ class BERTModelTrainer:
                                                                       # dataLoader for validation set
         
         return train_dataloader, val_dataloader
-      
+ 
     def initiate_model_trainer(self, train_dataloader):
         
-        for param in bert.parameters():
-            param.requires_grad = False 
         try:
-            model = nn.Sequential(
+            model = BertForSequenceClassification.from_pretrained(
                 bert,
-                nn.Dropout(0.1),
-                nn.ReLU(),
-                nn.Linear(768, 512),
-                nn.ReLU(),
-                nn.Dropout(0.1),
-                nn.Linear(512, 2),
-                nn.LogSoftmax(dim=1)
+                num_labels = 2,
+                output_attentions = False,
+                output_hidden_states = False,
             )
-            optimizer = torch.optim.AdamW(model.parameters(),lr = 1e-5)          # learning rate
+            optimizer = torch.optim.AdamW(model.parameters(),lr = 1e-5, eps = 1e-08)        # learning rate
             # Define the loss function
-            cross_entropy  = nn.NLLLoss() 
             # Number of training epochs
             epochs = 2
-            total_loss, total_accuracy = 0, 0
-            for epoch in range(epochs):
-                print(epoch)
-                total_loss = 0
-                model.train()
-                for step,batch in enumerate(train_dataloader):                # iterate over batches
-                    if step % 50 == 0 and not step == 0:                        # progress update after every 50 batches.
-                        print('  Batch {:>5,}  of  {:>5,}.'.format(step, len(train_dataloader)))
-                batch = [r for r in batch]                                  # push the batch to gpu
-                sent_id, mask, labels = batch 
-                model.zero_grad()                                           # clear previously calculated gradients
-                preds = model(sent_id, mask)                                # get model predictions for current batch
-                loss = cross_entropy(preds, labels)                         # compute loss between actual & predicted values
-                total_loss = total_loss + loss.item()                       # add on to the total loss
-                loss.backward()                                             # backward pass to calculate the gradients
-                torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)     # clip gradients to 1.0. It helps in preventing exploding gradient problem
-                optimizer.step()                                            # update parameters
-                preds=preds.detach().cpu().numpy()                          # model predictions are stored on GPU. So, push it to CPU
+            for _ in trange(epochs, desc = 'Epoch'):
+    
+                # ========== Training ==========
 
-                avg_loss = total_loss / len(train_dataloader)                 # compute training loss of the epoch  
-                                                                          # reshape predictions in form of (# samples, # classes)
-            
+                # Set model to training mode
+                model.train()
+
+                # Tracking variables
+                tr_loss = 0
+                nb_tr_examples, nb_tr_steps = 0, 0
+
+                for step, batch in enumerate(train_dataloader):
+                    batch = tuple(t for t in batch)
+                    b_input_ids, b_input_mask, b_labels = batch
+                    optimizer.zero_grad()
+                    # Forward pass
+                    train_output = model(b_input_ids, 
+                                         token_type_ids = None, 
+                                         attention_mask = b_input_mask, 
+                                         labels = b_labels)
+                    # Backward pass
+                    train_output.loss.backward()
+                    optimizer.step()
+                    # Update tracking variables
+                    tr_loss += train_output.loss.item()
+                    nb_tr_examples += b_input_ids.size(0)
+                    nb_tr_steps += 1
+
+                    
+                print('\n\t - Train loss: {:.4f}'.format(tr_loss / nb_tr_steps))
+                
+
             save_object(
                 file_path=self.model_trainer_config.trained_model_file_path,
                 obj=model
             )
-            return avg_loss  
-        except:
-            print("Error in training the model")
+        except Exception as e:
+            print("Error in training the model:", str(e))
 
 if __name__ == "__main__":
     train = pd.read_csv("artifacts/train.csv")
-    x_train = train['title']
-    y_train = train['true']
+    x_train = train['title'].values.tolist()
+    y_train = train['true'].values.tolist()
     val = pd.read_csv("artifacts/validation.csv")
-    x_val = val['title']
-    y_val = val['true']
+    x_val = val['title'].values.tolist()
+    y_val = val['true'].values.tolist()
+    print(len(x_train), len(y_train), len(x_val), len(y_val))
     
     BERT = BERTModelTrainer()
     train_dataloader, validation_dataloader = BERT.tokenizer(x_train,y_train, x_val, y_val)     
-    loss = BERT.initiate_model_trainer(train_dataloader)
-    print(f'\nTraining Loss: {loss}')
+    BERT.initiate_model_trainer(train_dataloader)
+
