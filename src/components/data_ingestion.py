@@ -15,6 +15,9 @@ from data_transformation import DataTransformationConfig
 from BiLSTM_model_trainer import ModelTrainerConfig
 from BiLSTM_model_trainer import ModelTrainer
 
+from BERT_model import ModelTrainerConfig
+from BERT_model import BERTModelTrainer
+
 @dataclass
 class DataIngestionConfig:
     train_data_path: str=os.path.join('artifacts',"train.csv")
@@ -98,10 +101,15 @@ if __name__ == "__main__":
     y_2 = pd.read_csv("artifacts/validation.csv")
     y_val = y_2['true']
     
-    print(len(x_train))
-    print(len(y_train))
-    print(len(x_val))
-    print(len(y_val))
-    
     modeltrainer=ModelTrainer()
     modeltrainer.initiate_model_trainer(x_train,y_train, x_val, y_val)
+    
+    BERT = BERTModelTrainer()
+    train_dataloader, validation_dataloader = BERT.tokenizer(x_train,y_train, x_val, y_val) 
+    train_losses=[] 
+    epochs = 2
+    for epoch in range(epochs):
+        print('\n Epoch {:} / {:}'.format(epoch + 1, epochs))     
+        loss = BERT.initiate_model_trainer(train_dataloader)
+        train_losses.append(loss)               # append training and validation loss
+        print(f'\nTraining Loss: {loss:.3f}')
