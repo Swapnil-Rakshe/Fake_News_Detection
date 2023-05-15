@@ -1,4 +1,4 @@
-# Fake News Detection using a BERT-based Deep Learning Approach
+# Fake News Detection using Deep Learning Approach
 # Introduction
 Fake News is pervasive nowadays and is too easy to spread with social media and it is difficult for us to identify. A lot of fake news has popped up on social networks, such as Instagram, Facebook, Twitter, etc . Hence, we aim to utilize artificial intelligence algorithms to detect fake news to help people recognize it.
 # Related Work
