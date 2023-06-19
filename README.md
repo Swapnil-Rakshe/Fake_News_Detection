@@ -1,17 +1,17 @@
-# Fake News Detection using Deep Learning Approach
+# Fake News Detection Using Deep Learning Approach
 # Introduction
-Fake News is pervasive nowadays and is too easy to spread with social media and it is difficult for us to identify. A lot of fake news has popped up on social networks, such as Instagram, Facebook, Twitter, etc . Hence, we aim to utilize artificial intelligence algorithms to detect fake news to help people recognize it.
+Fake News is pervasive nowadays and is too easy to spread with social media and it is difficult for us to identify. A lot of fake news has popped up on social networks, such as Instagram, Facebook, Twitter, etc. Hence, we aim to utilize artificial intelligence algorithms to detect fake news to help people recognize it.
 # Related Work
 In this section, we discuss some previous work that is related to fake news detection. Fake news can be defined as fabricated information that mimics news media content in form but not in organizational process or intent [1].  
-	In recent years, a lot of automated fake news detection methods have been proposed. For example, Shu, Kai, et al. [2] provided numerous methods to solve the problem of fake news classification, such as user-based, knowledge-based, social network-based, style-based methods, etc. Julio, et al. [3] presented a new set of features and measured the prediction performance of current approaches and features for automatic detection of fake news. Daniel, et al. [4] focused on the analysis of information credibility on Twitter. Heejung, et al. [5] applied the Bidirectional Encoder Representations from Transformers model (BERT) model to detect fake news by analyzing the relationship between the headline and the body text of news.  
+	In recent years, a lot of automated fake news detection methods have been proposed. For example, Shu, Kai, et al. [2] provided numerous methods to solve the problem of fake news classification, such as user-based, knowledge-based, social network-based, style-based methods, etc. Julio, et al. [3] presented a new set of features and measured the prediction performance of current approaches and features for the automatic detection of fake news. Daniel, et al. [4] focused on the analysis of information credibility on Twitter. Heejung, et al. [5] applied the Bidirectional Encoder Representations from the Transformers model (BERT) model to detect fake news by analyzing the relationship between the headline and the body text of news.  
 	Mohammad Hadi, et al. [6] applied different levels of n-grams for feature extraction based on the ISOT fake news dataset. Saqib, et al. [7] proposed an ensemble classification model for the detection of fake news that has achieved a better accuracy compared to the state-of-the-art also on the ISOT fake news dataset. Sebastian, et al. [8] used a neural network-based approach to perform text analysis and fake news detection on ISOT fake news dataset as well.
 # Methodology
 The process of fake news detection can be divided into four stages - data preprocessing, word embedding, models, and model fine-tuning.
 ## The Dataset
 Link: https://www.uvic.ca/engineering/ece/isot/datasets/fake-news/index.php
 
-The dataset we use is the ISOT Fake News dataset introduced by ISOT Research Lab at University of Victoria in Canada [9]. This dataset is a compilation of several thousand fake news and truthful articles, obtained from different legitimate news sites and sites flagged as unreliable by Politifact.com.
-To get insight into this dataset, we visualized it with word clouds for real and fake news respectively. Figure 1(a). shows the word cloud of the real news in the dataset, and Figure 1(b). shows the one of the fake news in the dataset.
+The dataset we use is the ISOT Fake News dataset introduced by the ISOT Research Lab at the University of Victoria in Canada [9]. This dataset is a compilation of several thousand fake news and truthful articles, obtained from different legitimate news sites and sites flagged as unreliable by Politifact.com.
+To get insight into this dataset, we visualized it with word clouds for real and fake news respectively. Figure 1(a). shows the word cloud of the real news in the dataset, and Figure 1(b). shows one of the fake news in the dataset.
 
 ###### Figure 1(a).
 ![](https://i.imgur.com/07Rh4uD.png "Figure 1(a).")
@@ -30,7 +30,7 @@ The original form of the dataset is two CSV files containing fake and real news 
 
 ## Data Preprocessing
 The main goal of this part is to use NLP techniques to preprocess the input data and prepare for the next step to extract the proper features.  
-	The data we use contains news titles and texts. Each of the titles is about 12.45 words long, while each of the texts is about 405.28 words long. In our project, we only use the titles for the fake news detection because the texts are too large for us to train efficiently. Also, the text contains too many details and information for a piece of news, which may distract the models during training.  
+	The data we use contains news titles and texts. Each of the titles is about 12.45 words long, while each of the texts is about 405.28 words long. In our project, we only use the titles for fake news detection because the texts are too large for us to train efficiently. Also, the text contains too many details and information for a piece of news, which may distract the models during training.  
 	We built a preprocessing pipeline for each statement to eliminate the noise in the fake news dataset. The preprocessing pipeline includes the following 3 sub-parts:
     
 1. Replaced characters that are not between a to z or A to Z with whitespace.
