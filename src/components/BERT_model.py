@@ -1,33 +1,31 @@
-import os
-import pandas as pd
-import numpy as np
-import torch
-from transformers import BertTokenizer, BertModel
-import torch.nn as nn
-from dataclasses import dataclass
-from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
-from transformers import AdamW
-from utils import save_object
-from transformers import BertForSequenceClassification
-from tqdm import trange
+import os  # Import the os module for interacting with the operating system
+import pandas as pd  # Import the pandas library for data manipulation
+import numpy as np  # Import the numpy library for numerical operations
+import torch  # Import the PyTorch library for deep learning
+from transformers import BertTokenizer, BertModel, BertForSequenceClassification  # Import components from Transformers
+import torch.nn as nn  # Import the PyTorch module for neural networks
+from dataclasses import dataclass  # Import the dataclass decorator for creating structured classes
+from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler  # Import data-related classes
+from transformers import AdamW  # Import the AdamW optimizer from Transformers
+from utils import save_object  # Import a custom utility function
+from tqdm import trange  # Import trange for progress tracking
 
 # Load BERT model and tokenizer via HuggingFace Transformers
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 bert = BertModel.from_pretrained("bert-base-uncased")
 
-
+# Define a data class for model trainer configuration
 @dataclass
 class ModelTrainerConfig:
     trained_model_file_path=os.path.join("artifacts", "BERT_model_trainer.pkl")
     
-
+# Define a class named 'BERTModelTrainer' for training a BERT-based model
 class BERTModelTrainer:
     def __init__(self):
         self.model_trainer_config = ModelTrainerConfig()
         
     def tokenizer(self, x_train, y_train, x_val, y_val):
-        # Majority of titles above have word length under 15. So, we set max title length as 15
-        MAX_LENGTH = 42
+        MAX_LENGTH = 42 # Maximum sequence length for tokenization
         # Tokenize and encode sequences in the train set
         tokens_train = tokenizer.batch_encode_plus(
             x_train,
@@ -74,9 +72,10 @@ class BERTModelTrainer:
     def initiate_model_trainer(self, train_dataloader):
         
         try:
+            # Load the BERT model for sequence classification
             model = BertForSequenceClassification.from_pretrained(
                 bert,
-                num_labels = 2,
+                num_labels = 2,  # Number of output labels
                 output_attentions = False,
                 output_hidden_states = False,
             )
@@ -124,6 +123,7 @@ class BERTModelTrainer:
             print("Error in training the model:", str(e))
 
 if __name__ == "__main__":
+    # Load training and validation data from CSV files
     train = pd.read_csv("artifacts/train.csv")
     x_train = train['title'].values.tolist()
     y_train = train['true'].values.tolist()
@@ -132,7 +132,7 @@ if __name__ == "__main__":
     y_val = val['true'].values.tolist()
     print(len(x_train), len(y_train), len(x_val), len(y_val))
     
-    BERT = BERTModelTrainer()
+    BERT = BERTModelTrainer()  # Create an instance of the BERTModelTrainer class
     train_dataloader, validation_dataloader = BERT.tokenizer(x_train,y_train, x_val, y_val)     
-    BERT.initiate_model_trainer(train_dataloader)
+    BERT.initiate_model_trainer(train_dataloader) # Initiate the training process
 

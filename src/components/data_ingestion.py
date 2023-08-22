@@ -1,3 +1,4 @@
+# Import necessary libraries for data analysis, visualization, and modeling
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -8,7 +9,7 @@ from sklearn.utils import shuffle
 from sklearn.model_selection import train_test_split
 import os
 
-
+# Import custom modules for data transformation, model training, and BERT modeling
 from data_transformation import InitiateDataTransformation
 from data_transformation import DataTransformationConfig
 
@@ -17,18 +18,19 @@ from BiLSTM_model_trainer import ModelTrainer
 
 from BERT_model import ModelTrainerConfig
 from BERT_model import BERTModelTrainer
-
+# Define a data class to hold configuration settings for data ingestion
 @dataclass
 class DataIngestionConfig:
     train_data_path: str=os.path.join('artifacts',"train.csv")
     test_data_path: str=os.path.join('artifacts',"test.csv")
     validation_data_path: str=os.path.join('artifacts',"validation.csv")
-    
+# Class for data analysis and visualization 
 class DataAnalysis:
     def __init__(self):
+        # Load true and fake news data
         self.true_data = pd.read_csv("dataset/True.csv")
         self.fake_data = pd.read_csv("dataset/Fake.csv")
-    
+    # Method to visualize subject distribution of true and fake news
     def data_visualization(self):
         fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(12, 6))
         
@@ -40,7 +42,7 @@ class DataAnalysis:
         
         plt.tight_layout()
         plt.show()
-        
+    # Method to create word clouds from news titles
     def create_wordcloud(self, data, title):
         all_titles = data.title.str.cat(sep=' ')
         wordcloud = WordCloud(background_color='white', width=800, height=500,
@@ -50,16 +52,18 @@ class DataAnalysis:
         plt.axis("off")
         plt.title(title, fontsize=20)
         plt.show()
+    # Method to visualize word clouds for true and fake news titles
     def visualize_wordclouds(self):
         self.create_wordcloud(self.true_data, 'Real News Title WordCloud')
         self.create_wordcloud(self.fake_data, 'Fake News Title WordCloud')
-    
+        
+# Class for data ingestion and preprocessing  
 class DataIngestion:
     def __init__(self):
         self.ingestion_config = DataIngestionConfig()
         self.true_data = pd.read_csv("dataset/True.csv")
         self.fake_data = pd.read_csv("dataset/Fake.csv")
-    
+     # Method to combine, label, shuffle, split, and save the data
     def data_combination(self):
         # Add Labels to both df
         self.true_data['true'] = 1
@@ -88,22 +92,23 @@ class DataIngestion:
                 self.ingestion_config.test_data_path
 
             )
-        
+# Main execution starts here     
 if __name__ == "__main__":
+     # Initialize DataIngestion class and perform data combination
     obj = DataIngestion()
     train_data, validation_data, test_data = obj.data_combination()
-    
+     # Initialize DataTransformation class and perform data transformation
     data_transformation = InitiateDataTransformation()
     x_train, x_val, x_test,_=data_transformation.initiate_data_transformation(train_data, validation_data, test_data)
-    
+    # Load labels for training and validation data
     y_1 = pd.read_csv("artifacts/train.csv")
     y_train = y_1['true']
     y_2 = pd.read_csv("artifacts/validation.csv")
     y_val = y_2['true']
-    
+    # Initialize and train the BiLSTM model
     modeltrainer=ModelTrainer()
     modeltrainer.initiate_model_trainer(x_train,y_train, x_val, y_val)
-    
+    # Initialize and train the BERT model
     BERT = BERTModelTrainer()
     train_dataloader, validation_dataloader = BERT.tokenizer(x_train,y_train, x_val, y_val) 
     train_losses=[] 
